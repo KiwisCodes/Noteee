@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> New: Card Created
+    
+    New --> Learning: First Review (Grade 1, 2, 3)
+    New --> Review: First Review (Grade 4 - Easy Graduation)
+    
+    Learning --> Learning: Grade 1 (Again - Reset Step)
+    Learning --> Learning: Grade 2 (Hard - Repeat Step)
+    Learning --> Review: Grade 3 or 4 (Graduation Step Passed)
+    
+    Review --> Review: Grade 2, 3, 4 (Scheduled FSRS Interval)
+    Review --> Relearning: Grade 1 (Lapse - Answer Forgotten)
+    
+    Relearning --> Relearning: Grade 1 (Again - Reset Relearn Step)
+    Relearning --> Review: Grade 2, 3, 4 (Relearning Graduated)

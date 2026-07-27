@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor User as User A (Mobile)
+    participant UI as React Native UI
+    participant DB as Local SQLite (op-sqlite)
+    participant Outbox as PowerSync Outbox (ps_crud)
+    participant Sync as PowerSync Cloud Relay
+    participant PG as Cloud PostgreSQL (Supabase)
+    actor Peer as User B (Mac Laptop)
+
+    User->>UI: Edit Block Content
+    UI->>DB: Execute Transactional UPDATE (<3ms)
+    DB->>Outbox: Append Mutation Record (FIFO)
+    UI-->>User: Render Local Update Instantly (0ms Lag)
+    
+    rect rgb(235, 245, 255)
+        Note over Outbox, Sync: Background WebSocket Sync Stream
+        Outbox->>Sync: Stream Mutation JSON Patch
+        Sync->>PG: Execute PostgreSQL Upsert/Patch
+        PG-->>Sync: Acknowledge Transaction Commit
+        Sync-->>Outbox: Clear Outbox Entry
+        Sync->>Peer: Broadcast Delta Patch over WebSocket
+        Peer->>Peer: Apply Delta Patch to Local SQLite & Re-render
+    end

@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Editor as Notion-Style Block Editor
+    participant Generator as Flashcard Generator Service
+    participant Embedder as On-Device ONNX / NLP Extractor
+    participant DB as SQLite Storage
+    participant UI as Flashcard Staging Queue UI
+
+    User->>Editor: Click "Generate AI Flashcards"
+    Editor->>Generator: generateQAFromPage(pageId, blocks)
+    Generator->>Embedder: Extract key facts, definitions & summaries
+    Embedder-->>Generator: Return Candidate Card Pairs [{ front, back, sourceBlockId }]
+    Generator->>UI: Present Candidate Flashcards in Staging Queue
+    alt User Confirms Card
+        User->>UI: Tap "Accept Card"
+        UI->>DB: Insert record into `flashcards` table (state: 'New')
+    else User Edits Card
+        User->>UI: Modify Front/Back text + Tap "Save"
+        UI->>DB: Insert updated record into `flashcards` table
+    else User Rejects Card
+        User->>UI: Tap "Reject"
+        UI->>UI: Remove card from staging queue
+    end

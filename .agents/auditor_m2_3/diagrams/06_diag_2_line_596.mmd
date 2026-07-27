@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant RN as React Native UI
+    participant History as ICommandHistoryManager
+    participant WebView as TipTap WebView Engine
+    participant DB as Local SQLite Database
+
+    rect rgb(240, 248, 255)
+        note over User, DB: User Undo Trigger (Cmd + Z)
+        User->>RN: Press Cmd + Z / Tap Undo Button
+        RN->>History: Call undo() method
+        History->>History: Pop step from undoStack, push to redoStack
+        History-->>RN: Return target step & previous selection state
+        RN->>WebView: RPC: 'editor:loadDocument' with reverted block snapshot
+        WebView->>WebView: Apply reverted ProseMirror document state
+        RN->>DB: Atomic SQLite write of reverted block records
+    end
+
+    rect rgb(255, 245, 238)
+        note over User, DB: User Redo Trigger (Cmd + Shift + Z)
+        User->>RN: Press Cmd + Shift + Z / Tap Redo Button
+        RN->>History: Call redo() method
+        History->>History: Pop step from redoStack, push to undoStack
+        History-->>RN: Return target step & restored selection state
+        RN->>WebView: RPC: 'editor:loadDocument' with restored block snapshot
+        WebView->>WebView: Apply restored ProseMirror document state
+        RN->>DB: Atomic SQLite write of restored block records
+    end

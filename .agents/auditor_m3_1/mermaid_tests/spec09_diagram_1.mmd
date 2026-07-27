@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Offline
+    
+    Offline --> Syncing : Network Detected / Reconnect Triggered
+    Syncing --> Online : Outbox Drained & WebSocket Authenticated
+    Syncing --> Conflict : Auth Error / Schema Mismatch / Mutation Failure
+    Online --> Syncing : New Outbox Transactions Queued
+    Online --> Offline : Connection Lost / Timeout
+    Conflict --> Syncing : Token Refreshed / Retry Exponential Backoff
+    Conflict --> Offline : Network Dropped

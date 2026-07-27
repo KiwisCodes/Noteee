@@ -1,0 +1,41 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant UI as Camera Capture UI
+    participant SessionMgr as CaptureSessionManager
+    participant CamSource as CameraCaptureSource
+    participant Disk as Local File Cache
+    participant DB as SQLite (capture_sessions)
+    participant AI as Intelligence Router
+    participant Activity as ActivityKit Bridge
+
+    User->>UI: Tap "Multi-Photo Scan"
+    UI->>SessionMgr: startSession({ modality: 'multi_photo' })
+    SessionMgr->>DB: INSERT INTO capture_sessions (status: 'RECORDING')
+    SessionMgr->>Activity: startActivity({ title: 'Scanning Photos' })
+    
+    loop Shutter Taps (Multiple Photos)
+        User->>UI: Tap Shutter Button
+        UI->>CamSource: captureFrame()
+        CamSource->>Disk: Save Cropped Image (/cache/photo_N.jpg)
+        CamSource->>SessionMgr: appendChunk({ imageUri, orderIndex })
+        SessionMgr->>DB: INSERT INTO capture_chunks
+        SessionMgr->>Activity: updateActivity({ count: N })
+    end
+
+    User->>UI: Tap "Done / Process"
+    UI->>SessionMgr: stopCapture()
+    SessionMgr->>DB: UPDATE capture_sessions SET status = 'PROCESSING'
+    SessionMgr->>Activity: updateActivity({ state: 'PROCESSING' })
+    
+    SessionMgr->>AI: analyzeSessionBuffer(photos)
+    AI-->>SessionMgr: Return Draft Blocks & Top 3 Folder Suggestions
+    SessionMgr->>DB: UPDATE capture_sessions SET status = 'SUGGESTION'
+    SessionMgr-->>UI: Display Placement Confirmation Modal
+    
+    User->>UI: Select "Confirm Folder: /Academics/Physics"
+    UI->>SessionMgr: confirmPlacement({ folderId: 'f-123' })
+    SessionMgr->>DB: Persist Pages & Blocks to SQLite
+    SessionMgr->>DB: DELETE FROM capture_sessions WHERE id = sessionId
+    SessionMgr->>Activity: endActivity()
+    SessionMgr-->>UI: Transition to Note View

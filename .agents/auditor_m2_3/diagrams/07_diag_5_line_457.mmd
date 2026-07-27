@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    actor Student
+    participant StudyUI as Flashcard Study View
+    participant Queue as Review Session Queue
+    participant FSRS as FSRSScheduler Engine (ts-fsrs v5)
+    participant DB as SQLite Flashcards DB
+
+    Student->>StudyUI: Open "Flashcards Hub" / Start Study Session
+    StudyUI->>Queue: Fetch Due Flashcards (due <= NOW())
+    Queue->>DB: Query `flashcards` WHERE due <= NOW() ORDER BY due ASC
+    DB-->>Queue: Return List of Due Cards
+    Queue-->>StudyUI: Present First Flashcard (Front View)
+    
+    Student->>StudyUI: Tap "Show Answer"
+    StudyUI-->>Student: Display Back View + 4 Rating Buttons (Again, Hard, Good, Easy)
+    
+    Student->>StudyUI: Tap Rating Button (e.g. 3 - Good)
+    StudyUI->>FSRS: processReview(card, rating: 3, reviewDate: NOW())
+    FSRS->>FSRS: Calculate new Stability S, Difficulty D, state transition, next due date
+    FSRS-->>StudyUI: Return FSRSSchedulingInfo { card, log }
+    
+    StudyUI->>DB: Update `flashcards` & Insert into `flashcard_review_logs`
+    StudyUI->>Queue: Pop reviewed card, load next card in queue
+    StudyUI-->>Student: Render Next Due Flashcard

@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant RN as React Native UI (Native Thread)
+    participant Bridge as JSI / WebMessage Bridge
+    participant WebView as WebView Engine (TipTap / ProseMirror)
+    participant History as Command History Manager
+    participant SQLite as Drizzle SQLite DB
+    participant Sync as PowerSync Cloud Relay
+
+    User->>RN: Types text in paragraph / executes slash command
+    RN->>Bridge: postMessage({ type: 'REQUEST', method: 'editor:execCommand', payload })
+    Bridge->>WebView: Inject JSON RPC payload
+    WebView->>WebView: Execute ProseMirror Transaction & Update DOM
+    WebView-->>Bridge: Emit EVENT: 'editor:onTransaction' (updatedBlocks)
+    Bridge-->>RN: Receive transaction payload via JSI event listener
+    RN->>History: Push step to debounced history window (500ms)
+    RN->>SQLite: Atomic SQLite Batch Update (`blocks` table)
+    SQLite-->>Sync: Trigger PowerSync WebSocket delta stream patch

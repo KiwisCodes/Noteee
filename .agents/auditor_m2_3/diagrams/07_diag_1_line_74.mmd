@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant App as Capture / Note Service
+    participant Embedder as On-Device ONNX Embedder
+    participant Tokenizer as BertTokenizer (WordPiece)
+    participant Ort as ONNX Runtime (CoreML / NNAPI)
+    participant VectorDB as SQLite Vector Storage
+
+    App->>Embedder: generateEmbedding(text)
+    Embedder->>Tokenizer: tokenize(text, maxLen=256)
+    Tokenizer-->>Embedder: { input_ids, attention_mask, token_type_ids }
+    Embedder->>Ort: runInference(tensors)
+    Ort-->>Embedder: Raw Token Embeddings (1 x N x 384 Float32)
+    Embedder->>Embedder: Mean Pooling over Attention Mask
+    Embedder->>Embedder: L2 Normalization (Unit Vector ||v|| = 1.0)
+    Embedder->>VectorDB: Store 384 Float32 Array in Blob Column
+    Embedder-->>App: Return EmbeddingResult { vector, dimensions: 384 }

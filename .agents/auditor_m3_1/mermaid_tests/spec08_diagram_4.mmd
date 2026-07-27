@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor User as User / Student
+    participant PDFView as PDF / Image Viewport
+    participant OccGen as Occlusion Card Generator
+    participant FSRS as Sector 4 FSRS Engine (ts-fsrs)
+    participant DB as SQLite Storage
+    participant Hub as Sector 4 Flashcards Hub
+
+    User->>PDFView: Drag Bounding Box Rectangle over Diagram Region
+    PDFView->>OccGen: createOcclusionMask(bounds, mode: HIDE_ALL_REVEAL_ONE)
+    OccGen->>OccGen: Normalize Bounds [relX, relY, relWidth, relHeight]
+    OccGen->>DB: INSERT into `flashcards` (type: 'image_occlusion', state: 'New')
+    OccGen->>DB: INSERT into `image_occlusion_masks`
+    
+    Note over User, Hub: Spaced Repetition Review Triggered (Due Date Reached)
+    
+    User->>Hub: Open Study Session in Flashcards Hub
+    Hub->>DB: SELECT due flashcards (type = 'image_occlusion')
+    DB-->>Hub: Return Image Occlusion Flashcard Record
+    Hub->>Hub: Render Image + Mask Overlays (Target Mask Hidden)
+    User->>Hub: Tap "Show Answer"
+    Hub-->>User: Animate Target Mask Fade Out (Reveal Hidden Text)
+    User->>Hub: Select Rating Button (e.g. 3 - Good)
+    Hub->>FSRS: processReview(card, rating: 3)
+    FSRS->>DB: Update `flashcards` (Stability S, Difficulty D, next due date)

@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    actor User as User / App UI
+    participant Router as AIRoutingStrategyEngine
+    participant RevCat as RevenueCat BillingAdapter
+    participant KeyStore as EncryptedKeyStoreVault
+    participant Proxy as Noteee Cloud AI Proxy
+    participant ExternalAPI as Direct AI Provider (OpenAI/DeepSeek)
+
+    User->>Router: executeAiTask(taskType, payload)
+    Router->>RevCat: getEntitlementState()
+    RevCat-->>Router: EntitlementState (isProActive, activeTier)
+
+    alt User has Active Pro Subscription or 90-Day Trial
+        Router->>Proxy: dispatchProAiRequest(taskType, payload, sessionToken)
+        Proxy-->>Router: AI Response (OCR / Transcript / Flashcards)
+        Router-->>User: Render AI Output Result
+    else Pro Entitlement Expired or Inactive
+        Router->>KeyStore: hasValidApiKey(provider)
+        KeyStore-->>Router: boolean (hasUserKey)
+        
+        alt User Has Configured Valid BYOK Key
+            Router->>KeyStore: getApiKey(provider)
+            KeyStore-->>Router: Decrypted Key String
+            Router->>ExternalAPI: POST /v1/chat/completions (Header: Bearer Key)
+            ExternalAPI-->>Router: Direct API Response
+            Router->>KeyStore: zeroizeMemoryBuffer()
+            Router-->>User: Render AI Output Result (BYOK Tagged)
+        else No BYOK Key Available
+            Router->>Router: checkAvailableCredits()
+            alt User Has Available Consumable Credits
+                Router->>Router: deductCredits(taskType)
+                Router->>Proxy: dispatchCreditAiRequest(taskType, payload)
+                Proxy-->>Router: AI Response
+                Router-->>User: Render AI Output Result (Credits Remaining)
+            else Zero Credits Remaining
+                Router-->>User: Throw QuotaExceededException (Trigger Paywall Modal)
+            end
+        end
+    end

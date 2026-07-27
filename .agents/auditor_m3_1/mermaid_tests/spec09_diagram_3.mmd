@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor Creator as User A (Creator)
+    participant ClientA as Client A Runtime
+    participant Relay as Yjs WebSocket Relay
+    participant ClientB as Client B Runtime
+    actor Joiner as User B (Recipient)
+
+    Creator->>ClientA: Click "Share E2EE Link"
+    ClientA->>ClientA: Generate 256-bit AES-GCM Key K
+    ClientA->>ClientA: Construct URL `https://noteee.app/collab/#key=K`
+    Note over ClientA, Relay: Hash fragment #key is NEVER sent to server
+    Creator->>Joiner: Send Share URL via Messaging
+    
+    Joiner->>ClientB: Click Share Link
+    ClientB->>ClientB: Parse URL & Extract Key K from Hash Fragment
+    ClientB->>Relay: Connect to Room `page-123` (No Key Transmission)
+    
+    rect rgb(240, 255, 240)
+        Note over ClientA, ClientB: Zero-Knowledge Real-Time Collaboration
+        ClientA->>ClientA: Encrypt Y.Doc Update with Key K -> Ciphertext
+        ClientA->>Relay: Push Encrypted Binary Payload
+        Relay->>ClientB: Relay Raw Ciphertext Payload (Server cannot read)
+        ClientB->>ClientB: Decrypt Ciphertext with Key K
+        ClientB->>ClientB: Apply Y.Doc Update to Editor View
+    end

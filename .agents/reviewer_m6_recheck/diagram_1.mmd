@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor User as User Stylus
+    participant GH as GestureHandler (UI Thread)
+    participant Worklet as RN Worklet Runtime
+    participant Skia as ISkiaCanvasEngine (SkCanvas)
+    participant RTree as IStrokeSpatialIndex (R-Tree)
+    participant Recognizer as IHandwritingRecognizer
+    participant SQLite as SQLite Vector & FTS5 DB
+
+    User->>GH: Touch Down / Drag (x, y, pressure, tilt)
+    GH->>Worklet: Execute onTouchWorklet() [UI Thread]
+    Worklet->>Skia: appendPoint(StrokePoint)
+    Skia->>Skia: Apply Catmull-Rom Spline Interpolation
+    Skia->>Skia: Render Active Stroke to Offscreen Buffer B
+    Skia-->>User: Blit Composited GPU Frame (60FPS)
+    User->>GH: Touch Up / Stroke Complete
+    GH->>Skia: endStroke()
+    Skia->>Skia: Apply RDP Path Simplification (epsilon=0.75)
+    Skia->>Skia: Bake Active Buffer B into Static Buffer A
+    Skia->>RTree: insert(CanvasStroke) [Update R-Tree MBR]
+    
+    par Async Offline Handwriting Indexing
+        Skia->>Recognizer: recognizeStrokes(StrokeVectorBlock)
+        Recognizer->>Recognizer: Extract Tangent Angles & Curvature Features
+        Recognizer->>Recognizer: ONNX Local Handwriting Recognition
+        Recognizer-->>SQLite: Index Recognized Text Tokens in FTS5 & Vector Store
+    end
+
+    note over User, SQLite: Search Execution Workflow
+    User->>Recognizer: searchHandwriting(HandwritingSearchQuery)
+    Recognizer->>SQLite: Query FTS5 Text & SQLite Vec Index
+    SQLite-->>Recognizer: Return Matched Stroke Group IDs & Spatial BBox
+    Recognizer->>RTree: queryEnvelope(MatchedBBox)
+    RTree-->>Recognizer: Return CanvasStrokes
+    Recognizer-->>User: Scroll Viewport & Pulse Highlight Bounding Box

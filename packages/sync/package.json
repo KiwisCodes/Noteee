@@ -1,0 +1,17 @@
+{
+  "name": "@noteee/sync",
+  "version": "0.1.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@noteee/core": "workspace:*",
+    "yjs": "^13.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

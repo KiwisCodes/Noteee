@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    actor Stylus as Stylus / Finger Input
+    participant GH as GestureHandler (UI Thread)
+    participant Worklet as React Native Worklet Runtime
+    participant Skia as Skia GPU Renderer (SkCanvas)
+    participant Buffer as Offscreen SkSurface Buffer
+    participant JS as Main JS Thread
+    participant DB as Drizzle SQLite Storage
+
+    Stylus->>GH: Touch Down / Move (x, y, pressure, timestamp)
+    GH->>Worklet: Execute onTouchWorklet(event) [UI Thread]
+    Worklet->>Worklet: Append point to Active Stroke Shared Value Buffer
+    Worklet->>Skia: Trigger SkCanvas.invalidate() [Direct C++ JSI]
+    Skia->>Buffer: Draw Active Interpolated Bezier Curve Segment
+    Buffer-->>Skia: Blit to Native Surface Window (60FPS)
+    Stylus->>GH: Touch Up / End
+    GH->>JS: Dispatch Stroke Complete Event
+    JS->>JS: Run RDP Path Simplification Algorithm
+    JS->>DB: Persist CanvasStroke record to SQLite

@@ -1,0 +1,33 @@
+flowchart TD
+    classDef stateNode fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+    classDef actionNode fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#38bdf8;
+    classDef decisionNode fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+
+    Start([PDF Document Viewport Loaded]):::stateNode --> SelectTool{User Selects Annotation Tool}:::decisionNode
+
+    SelectTool -->|Text Highlight Tool| DragHighlight[Drag Gesture over PDF Text]:::actionNode
+    SelectTool -->|Area Crop Tool| DragCrop[Draw Bounding Box over Diagram]:::actionNode
+    SelectTool -->|Occlusion Mask Tool| DrawMasks[Draw Rectangles / Polygons over Key Terms]:::actionNode
+
+    %% Text Highlight Branch
+    DragHighlight --> ExtractQuads[Extract pdfjs-dist Glyph Quads]:::actionNode
+    ExtractQuads --> SnapQuads[Snap Gesture to Text Line Quads]:::actionNode
+    SnapQuads --> CreateHighlight[Save PdfTextHighlight & Build Deep Link URI]:::actionNode
+    CreateHighlight --> HighlightDone([Text Highlight Complete]):::stateNode
+
+    %% Area Crop Branch
+    DragCrop --> RenderArea[Render High-DPI Canvas Image Slice]:::actionNode
+    RenderArea --> BuildEmbedBlock[Build TipTap canvas_embed Block]:::actionNode
+    BuildEmbedBlock --> EmbedDone([Embedded Block Inserted into Note]):::stateNode
+
+    %% Image Occlusion Branch
+    DrawMasks --> SelectOcclusionMode{Select Occlusion Mode}:::decisionNode
+    SelectOcclusionMode -->|Hide All, Reveal One| ModeHideAll[Configure Mask Shader: Hide All]:::actionNode
+    SelectOcclusionMode -->|Hide One, Reveal One| ModeHideOne[Configure Mask Shader: Hide One]:::actionNode
+
+    ModeHideAll --> BuildFsrsCards[Instantiate FsrsImageOcclusionCard Records]:::actionNode
+    ModeHideOne --> BuildFsrsCards
+
+    BuildFsrsCards --> SaveFsrsDb[Persist Cards to SQLite FSRS Database]:::actionNode
+    SaveFsrsDb --> AttachDeepLinks[Attach noteee://pdf/... Deep Link URIs]:::actionNode
+    AttachDeepLinks --> OcclusionDone([FSRS Flashcards Ready for Review]):::stateNode

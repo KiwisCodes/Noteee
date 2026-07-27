@@ -1,0 +1,45 @@
+stateDiagram-v2
+    [*] --> AnonymousUnsubscribed: Initial App Install
+
+    state AnonymousUnsubscribed {
+        [*] --> AdSupportedFreeTier
+        AdSupportedFreeTier --> BYOKConfigured: User Registers API Key
+        BYOKConfigured --> AdSupportedFreeTier: User Removes API Key
+    }
+
+    AnonymousUnsubscribed --> Trial90DayActive: Claim 90-Day Free Trial
+    AnonymousUnsubscribed --> ProSubscribed: Purchase Pro Subscription (Monthly/Annual)
+    AnonymousUnsubscribed --> LifetimeUnlocked: Purchase Lifetime Non-Consumable
+
+    state Trial90DayActive {
+        [*] --> TrialRunning
+        TrialRunning --> TrialExpiringWarning: Day 83 Reached (7 Days Remaining)
+        TrialExpiringWarning --> TrialRunning: User Acknowledges Notice
+    }
+
+    Trial90DayActive --> ProSubscribed: Convert to Paid Pro Subscription
+    Trial90DayActive --> TrialExpired: 90 Days Elapsed (No Auto-Renew)
+
+    state TrialExpired {
+        [*] --> RestrictedFreeMode
+    }
+
+    RestrictedFreeMode --> ProSubscribed: Purchase Pro Monthly / Annual
+    RestrictedFreeMode --> LifetimeUnlocked: Purchase Lifetime $149.99
+    RestrictedFreeMode --> AdSupportedFreeTier: Fallback to Ad-Supported Mode
+
+    state ProSubscribed {
+        [*] --> SubscriptionActive
+        SubscriptionActive --> PastDueGracePeriod: Payment Charge Failed (Store Grace)
+        PastDueGracePeriod --> SubscriptionActive: Payment Method Updated & Recovered
+        PastDueGracePeriod --> SubscriptionCanceled: Grace Period Expired (14 Days)
+        SubscriptionActive --> SubscriptionCanceled: User Cancels Renewal
+    }
+
+    SubscriptionCanceled --> RestrictedFreeMode: Entitlement Expiration Timestamp Passed
+
+    state LifetimeUnlocked {
+        [*] --> EntitlementPermanentActive: Lifetime Entitlement Verified
+    }
+
+    LifetimeUnlocked --> [*]

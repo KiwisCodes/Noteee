@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant SearchUI as Search Bar / Command Palette (⌘K)
+    participant SearchEngine as Hybrid Semantic Search Engine
+    participant ONNX as Local Embedder (MiniLM-L6-v2)
+    participant VectorDB as SQLite Vector Table
+    participant FTS5 as SQLite FTS5 Table
+    participant Tree as Folder Tree Resolver
+
+    User->>SearchUI: Type query ("quantum wave function")
+    SearchUI->>SearchEngine: search({ query, topK: 20 })
+    
+    par Vector Processing Branch
+        SearchEngine->>ONNX: generateEmbedding("quantum wave function")
+        ONNX-->>SearchEngine: Query Vector q (384 Float32)
+        SearchEngine->>VectorDB: Compute Dot Product (q • page_vector)
+        VectorDB-->>SearchEngine: Top 50 Vector Candidates List [Rank 1..50]
+    and FTS5 Keyword Branch
+        SearchEngine->>FTS5: Execute MATCH 'quantum wave function'
+        FTS5-->>SearchEngine: Top 50 BM25 Candidates List [Rank 1..50]
+    end
+
+    SearchEngine->>SearchEngine: Apply RRF Fusion: RRF(d) = 1/(60 + r_vec) + 1/(60 + r_bm25)
+    SearchEngine->>SearchEngine: Sort candidates by RRF Score descending
+    SearchEngine->>Tree: Resolve Full Directory Path for Top K results
+    Tree-->>SearchEngine: Attach Paths ("/Academics/Physics/Quantum Mechanics")
+    SearchEngine-->>SearchUI: Return Ranked SearchResultItem[] (< 500ms)

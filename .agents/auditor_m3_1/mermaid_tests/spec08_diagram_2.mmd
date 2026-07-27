@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant PDFView as PDF Viewport (react-native-pdf)
+    participant TextEngine as pdfjs-dist Text Engine
+    participant Overlay as Skia PDF Overlay Canvas
+    participant DB as SQLite Storage
+
+    User->>PDFView: Drag Text Selection Handles on PDF Page
+    PDFView->>TextEngine: getSelectedTextQuadpoints(pageIndex, selectionRange)
+    TextEngine-->>PDFView: Return Normalized Quadpoints[] + Text Quote String
+    User->>PDFView: Tap "Highlight" (Color: Yellow)
+    PDFView->>Overlay: Convert PDF Quadpoints to Viewport Screen Pixels
+    Overlay->>Overlay: Render Translucent Polygon Highlighting Path
+    PDFView->>DB: Persist PDFTextHighlightAnnotation to SQLite

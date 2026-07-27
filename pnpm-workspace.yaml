@@ -1,0 +1,8 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  esbuild: true
+  leveldown: true
+  msgpackr-extract: true
+  sharp: true

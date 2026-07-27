@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> IDLE
+    
+    IDLE --> RECORDING : START_CAPTURE (Modality Selected)
+    
+    RECORDING --> RECORDING : APPEND_CHUNK (Add photo / Audio snippet / Text)
+    RECORDING --> PROCESSING : STOP_CAPTURE / CONFIRM_INPUT
+    RECORDING --> CANCELLED : DISCARD_SESSION
+    
+    PROCESSING --> PROCESSING : UPDATE_PROGRESS (Whisper STT / Vector Calc)
+    PROCESSING --> SUGGESTION : PROCESSING_COMPLETE (Suggestions Ready)
+    PROCESSING --> CANCELLED : DISCARD_SESSION
+    
+    SUGGESTION --> FILED : CONFIRM_PLACEMENT (Target Folder/Page Selected)
+    SUGGESTION --> SUGGESTION : REQUEST_NEW_BRANCH (Prompt New Folder Name)
+    SUGGESTION --> CANCELLED : DISCARD_SESSION
+    
+    FILED --> [*]
+    CANCELLED --> [*]

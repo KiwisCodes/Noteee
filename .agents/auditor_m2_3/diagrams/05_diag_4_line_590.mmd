@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant OS as Operating System
+    participant App as Noteee App (Foreground Event)
+    participant Clip as ClipboardDetector
+    participant UI as Quick Capture Banner
+    participant SessionMgr as CaptureSessionManager
+    participant DB as SQLite
+
+    OS->>App: Trigger AppState 'active' Event
+    App->>Clip: inspectClipboard()
+    Clip->>Clip: Classify Content (URL / Text / Vault Credential)
+    
+    alt New Unprocessed Clipboard Item Found
+        Clip-->>UI: Display Toast Banner ("Save copied link to Noteee?")
+        User->>UI: Tap "Save to Daily Notes"
+        UI->>SessionMgr: createSessionFromClipboard(content)
+        SessionMgr->>DB: Persist Page & Blocks directly to Daily Log
+        SessionMgr-->>UI: Show Success Toast ("Saved!")
+    else No New Item or User Dismisses
+        UI->>Clip: Store SHA-256 Hash to Prevent Duplicate Toast
+    end

@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant App as Noteee App UI
+    participant RC as RevenueCat SDK
+    participant Store as Apple StoreKit / Google Play
+    participant Webhook as RevenueCat Webhook
+    participant Supabase as Supabase Auth & DB
+
+    User->>App: Tap "Upgrade to Pro"
+    App->>RC: Call `purchasePackage(proPackage)`
+    RC->>Store: Launch Native Payment Sheet
+    User->>Store: Authenticate FaceID / TouchID Payment
+    Store-->>RC: Transaction Success + Signed Receipt
+    RC->>RC: Validate Purchase Receipt
+    
+    par Async Webhook Update
+        RC->>Webhook: Post Purchase Event Webhook
+        Webhook->>Supabase: Grant `pro_subscription` Role in DB
+    and Client Entitlement Sync
+        RC-->>App: Return Updated CustomerInfo (Active Entitlements)
+        App->>App: Update Entitlement State Context
+        App-->>User: Unlock Multi-Device Sync & Web App Access
+    end

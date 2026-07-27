@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant UI as Voice Capture UI
+    participant SessionMgr as CaptureSessionManager
+    participant Whisper as WhisperEngine (C++ JSI)
+    participant Mic as AudioRecorder Stream
+    participant Activity as Dynamic Island
+    participant DB as SQLite
+
+    User->>UI: Tap "Record Voice Note"
+    UI->>SessionMgr: startSession({ modality: 'audio' })
+    SessionMgr->>Mic: startRecording({ sampleRate: 16000 })
+    SessionMgr->>DB: INSERT INTO capture_sessions (status: 'RECORDING')
+    SessionMgr->>Activity: startActivity({ state: 'RECORDING' })
+
+    loop Every 500ms Audio Stream
+        Mic->>Whisper: streamAudioPCMBuffer(pcmChunk)
+        Whisper-->>SessionMgr: emitPartialTranscript("Discussing project...")
+        SessionMgr->>UI: Update Live Waveform & Text Snippet
+        SessionMgr->>Activity: updateActivity({ duration, snippet })
+    end
+
+    User->>UI: Tap "Stop & Transcribe"
+    UI->>SessionMgr: stopCapture()
+    SessionMgr->>Mic: stopRecording()
+    SessionMgr->>DB: UPDATE status = 'PROCESSING'
+    
+    SessionMgr->>Whisper: finalizeTranscription(fullAudioPath)
+    Whisper-->>SessionMgr: Full Text Transcript + Timestamps
+    SessionMgr->>DB: UPDATE session_data WITH transcript & draft blocks
+    SessionMgr->>DB: UPDATE status = 'SUGGESTION'
+    SessionMgr->>Activity: updateActivity({ state: 'SUGGESTION' })
+    SessionMgr-->>UI: Display AI Placement Suggestions Modal

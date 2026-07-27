@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor User as User Stylus
+    participant GH as GestureHandler (UI Thread Worklet)
+    participant Skia as Skia GPU Canvas (60FPS)
+    participant Manager as StrokeManager
+    participant RDP as RDP Simplifier
+    participant DB as SQLite (CanvasStrokes DB)
+
+    User->>GH: Touch Down (x, y, pressure, t)
+    GH->>GH: Initialize Active Stroke Buffer
+    
+    loop During Touch Move (60Hz - 120Hz)
+        User->>GH: Touch Move (x, y, pressure, t)
+        GH->>GH: Catmull-Rom to Cubic Bezier Interpolation
+        GH->>Skia: Invalidate SkCanvas Surface [Direct JSI]
+        Skia-->>User: Blit Smooth Ink Curve Segment to Screen
+    end
+    
+    User->>GH: Touch Up / Lift Stylus
+    GH->>Manager: strokeCompleted(rawPoints)
+    Manager->>RDP: simplifyStrokeRDP(rawPoints, epsilon=0.75)
+    RDP-->>Manager: Return Optimized Points Array (Reduced by 70%)
+    Manager->>Manager: Compute AABB Bounding Box [minX, minY, maxX, maxY]
+    Manager->>DB: INSERT into `canvas_strokes` (JSON points, AABB bounds)
+    DB-->>Manager: Confirm Persistent Save
