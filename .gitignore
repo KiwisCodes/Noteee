@@ -1,24 +1,76 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Builds
+# Monorepo & Build Outputs
 dist/
 build/
 .next/
 out/
-.expo/
 .turbo/
 *.tsbuildinfo
+*.tgz
 
-# OS / Editor
-.DS_Store
-.idea/
-.vscode/
-*.log
+# Expo & Mobile (iOS / Android)
+.expo/
+.expo-shared/
+web-build/
 
-# Environment variables
+# iOS Native
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcodeproj/project.xcworkspace
+ios/*.xcodeproj/xcuserdata/
+ios/DerivedData/
+
+# Android Native
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+android/*.iml
+android/.idea/
+
+# Environment Variables & Secrets
 .env
+.env*.local
 .env.local
 .env.development.local
+.env.test.local
 .env.production.local
+*.pem
+*.key
+
+# Logs & Testing
+*.log
+coverage/
+.nyc_output/
+
+# OS Specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Tooling
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# Local SQLite / Temp Data
+*.sqlite
+*.sqlite-journal
+*.db
